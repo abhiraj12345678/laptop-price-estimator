@@ -1,16 +1,42 @@
 import streamlit as st
 import pickle
 import pandas as pd
+import os
 
-# ================= LOAD MODEL =================
-with open("model.pkl", "rb") as f:
-    model = pickle.load(f)
-
+# ================= PAGE CONFIG =================
 st.set_page_config(page_title="Laptop Price Predictor", layout="centered")
+
+
+# ================= LOAD MODEL (SAFE WAY) =================
+
+@st.cache_resource
+def load_model():
+
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    model_path = os.path.join(base_dir, "model.pkl")
+
+    if not os.path.exists(model_path):
+        st.error("❌ model.pkl file not found! Please upload it to GitHub.")
+        st.stop()
+
+    try:
+        with open(model_path, "rb") as f:
+            model = pickle.load(f)
+        return model
+
+    except Exception as e:
+        st.error("❌ Model loading failed!")
+        st.exception(e)
+        st.stop()
+
+
+model = load_model()
+
+
+# ================= TITLE =================
 
 st.title("💻 Laptop Price Predictor")
 st.write("Select brand-wise configuration to predict price")
-
 # ================= BRAND CONFIG =================
 
 brand_config = {
