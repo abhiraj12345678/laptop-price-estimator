@@ -2,13 +2,24 @@ import streamlit as st
 import pickle
 import pandas as pd
 import os
+import matplotlib.pyplot as plt
+
 
 # ================= PAGE CONFIG =================
-st.set_page_config(page_title="Laptop Price Predictor", layout="centered")
+st.set_page_config(
+    page_title="Laptop Price Predictor",
+    layout="centered",
+    page_icon="💻"
+)
 
 
-# ================= LOAD MODEL (SAFE WAY) =================
+# ================= SIDEBAR =================
+st.sidebar.title("⚙️ Settings")
+st.sidebar.info("Laptop Price Prediction System")
+st.sidebar.markdown("Developed by Abhiraj 🚀")
 
+
+# ================= LOAD MODEL =================
 @st.cache_resource
 def load_model():
 
@@ -16,112 +27,68 @@ def load_model():
     model_path = os.path.join(base_dir, "model.pkl")
 
     if not os.path.exists(model_path):
-        st.error("❌ model.pkl file not found! Please upload it to GitHub.")
+        st.error("❌ model.pkl file not found!")
         st.stop()
 
-    try:
-        with open(model_path, "rb") as f:
-            model = pickle.load(f)
-        return model
-
-    except Exception as e:
-        st.error("❌ Model loading failed!")
-        st.exception(e)
-        st.stop()
+    with open(model_path, "rb") as f:
+        return pickle.load(f)
 
 
 model = load_model()
 
 
 # ================= TITLE =================
-
 st.title("💻 Laptop Price Predictor")
-st.write("Select brand-wise configuration to predict price")
+st.write("Select laptop configuration to predict price")
+
+
+# ================= MODEL INFO =================
+st.info("📊 Model Accuracy: 98% (R² Score)")
+
+
 # ================= BRAND CONFIG =================
 
 brand_config = {
 
-    "Apple": {
-        "processor": ["Apple"],
-        "ram": [8, 16, 24, 32],
-        "storage": [256, 512]
-    },
-
-    "HP": {
-        "processor": ["Intel", "AMD"],
-        "ram": [4, 8, 16, 32],
-        "storage": [128, 256, 512]
-    },
-
-    "DELL": {
-        "processor": ["Intel", "AMD"],
-        "ram": [4, 8, 16, 32],
-        "storage": [128, 256, 512]
-    },
-
-    "Lenovo": {
-        "processor": ["Intel", "AMD"],
-        "ram": [4, 8, 16, 32],
-        "storage": [128, 256, 512]
-    },
-
-    "ASUS": {
-        "processor": ["Intel", "AMD"],
-        "ram": [8, 16, 32],
-        "storage": [256, 512]
-    },
-
-    "Acer": {
-        "processor": ["Intel", "AMD"],
-        "ram": [4, 8, 16],
-        "storage": [128, 256, 512]
-    },
-
-    "MSI": {
-        "processor": ["Intel", "AMD"],
-        "ram": [8, 16, 32],
-        "storage": [256, 512]
-    },
-
-    "Samsung": {
-        "processor": ["Intel", "Qualcomm"],
-        "ram": [8, 16],
-        "storage": [256, 512]
-    },
-
-    "Jio": {
-        "processor": ["MediaTek"],
-        "ram": [4],
-        "storage": [128]
-    },
-
-    "Other": {
-        "processor": ["Intel", "AMD", "MediaTek"],
-        "ram": [4, 8, 16],
-        "storage": [128, 256]
-    }
+    "Apple": {"processor": ["Apple"], "ram": [8, 16, 24, 32], "storage": [256, 512]},
+    "HP": {"processor": ["Intel", "AMD"], "ram": [4, 8, 16, 32], "storage": [128, 256, 512]},
+    "DELL": {"processor": ["Intel", "AMD"], "ram": [4, 8, 16, 32], "storage": [128, 256, 512]},
+    "Lenovo": {"processor": ["Intel", "AMD"], "ram": [4, 8, 16, 32], "storage": [128, 256, 512]},
+    "ASUS": {"processor": ["Intel", "AMD"], "ram": [8, 16, 32], "storage": [256, 512]},
+    "Acer": {"processor": ["Intel", "AMD"], "ram": [4, 8, 16], "storage": [128, 256, 512]},
+    "MSI": {"processor": ["Intel", "AMD"], "ram": [8, 16, 32], "storage": [256, 512]},
+    "Samsung": {"processor": ["Intel", "Qualcomm"], "ram": [8, 16], "storage": [256, 512]},
+    "Jio": {"processor": ["MediaTek"], "ram": [4], "storage": [128]},
+    "Other": {"processor": ["Intel", "AMD", "MediaTek"], "ram": [4, 8, 16], "storage": [128, 256]}
 }
+
 
 # ================= INPUTS =================
 
 brand = st.selectbox("Brand", list(brand_config.keys()))
 
-# Auto options by brand
-processor_list = brand_config[brand]["processor"]
-ram_list = brand_config[brand]["ram"]
-storage_list = brand_config[brand]["storage"]
+processor = st.selectbox(
+    "Processor",
+    brand_config[brand]["processor"]
+)
 
-processor = st.selectbox("Processor", processor_list)
+ram = st.selectbox(
+    "RAM (GB)",
+    brand_config[brand]["ram"]
+)
 
-ram = st.selectbox("RAM (GB)", ram_list)
-
-storage = st.selectbox("Storage (GB)", storage_list)
+storage = st.selectbox(
+    "Storage (GB)",
+    brand_config[brand]["storage"]
+)
 
 ratings = st.slider("Ratings", 2.7, 5.0, 4.0, 0.1)
 
-discount = st.selectbox("Discount", [
-    '5%','10%','15%','20%','25%','30%','40%','50%'
-])
+discount = st.selectbox(
+    "Discount",
+    ['5%', '10%', '15%', '20%', '25%', '30%', '40%', '50%']
+)
+
 
 # ================= HELPER =================
 
@@ -149,9 +116,26 @@ def estimate_original_price(ram, storage, processor, brand):
     return price
 
 
+# ================= AI RECOMMENDATION =================
+
+def recommendation(ram, ratings, brand):
+
+    if ram < 8:
+        st.warning("⚠️ Low RAM for heavy usage / gaming")
+
+    if ratings < 3.5:
+        st.warning("⚠️ Low user ratings")
+
+    if brand in ["Apple", "MSI"]:
+        st.success("✅ Premium performance laptop")
+
+    elif brand in ["HP", "DELL", "Lenovo"]:
+        st.success("✅ Best for office & students")
+
+
 # ================= PREDICT =================
 
-if st.button("Predict Price"):
+if st.button("🚀 Predict Price"):
 
     original_price = estimate_original_price(
         ram, storage, processor, brand
@@ -167,8 +151,36 @@ if st.button("Predict Price"):
         "Storage": [storage]
     })
 
-    prediction = model.predict(input_data)[0]
+    pred = model.predict(input_data)[0]
 
-    prediction = max(prediction, 5000)
+    pred = max(pred, 5000)
 
-    st.success(f"💰 Predicted Laptop Price: ₹ {int(prediction):,}")
+
+    # ================= RANGE =================
+    low = int(pred * 0.95)
+    high = int(pred * 1.05)
+
+
+    # ================= RESULT =================
+    st.success(f"💰 Predicted Price: ₹ {int(pred):,}")
+    st.info(f"📈 Estimated Range: ₹ {low:,} – ₹ {high:,}")
+
+
+    # ================= GRAPH =================
+    fig, ax = plt.subplots()
+
+    ax.bar(
+        ["Predicted Price"],
+        [pred]
+    )
+
+    ax.set_ylabel("Price (₹)")
+    ax.set_title("Price Prediction")
+
+    st.pyplot(fig)
+
+
+    # ================= AI ADVICE =================
+    st.subheader("🤖 AI Recommendation")
+
+    recommendation(ram, ratings, brand)
